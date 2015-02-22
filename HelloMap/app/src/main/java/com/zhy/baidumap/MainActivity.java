@@ -1,23 +1,40 @@
 package com.zhy.baidumap;
 
-import android.app.ActionBar;
 import android.app.Activity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.Window;
 
+import com.baidu.location.BDLocation;
+import com.baidu.location.BDLocationListener;
+import com.baidu.location.LocationClient;
+import com.baidu.location.LocationClientOption;
 import com.baidu.mapapi.SDKInitializer;
 import com.baidu.mapapi.map.BaiduMap;
+import com.baidu.mapapi.map.BitmapDescriptor;
+import com.baidu.mapapi.map.BitmapDescriptorFactory;
 import com.baidu.mapapi.map.MapStatusUpdate;
 import com.baidu.mapapi.map.MapStatusUpdateFactory;
 import com.baidu.mapapi.map.MapView;
+import com.baidu.mapapi.map.MyLocationConfiguration;
+import com.baidu.mapapi.map.MyLocationData;
+import com.baidu.mapapi.model.LatLng;
 
-public class MainActivity extends Activity {
+public class MainActivity extends Activity implements OnOrientationEvent {
     public static final String TAG = "TAG";
     private MapView mapView;
     private BaiduMap bdMap;
+
+
+    private LocationClient locClient;
+    private BDLocationListener locListener;
+
+    private MySensorEventListener sensorEventListener;
+
+    private LatLng curLatLng;
+    private float direction;
+    private boolean isFirstIn = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,12 +43,55 @@ public class MainActivity extends Activity {
         //初始化SDK
         SDKInitializer.initialize(getApplicationContext());
         setContentView(R.layout.main_activity);
+        //初始化控件
+        init();
+        //初始化定位信息
+        initLocClt();
+
+    }
+
+    private void initLocClt() {
+        locClient = new LocationClient(this);
+        locListener = new MyLocationListener();
+        LocationClientOption locCltOpt = new LocationClientOption();
+        locCltOpt.setCoorType("bd09ll");//设置百度坐标系
+        locCltOpt.setOpenGps(true);
+        locCltOpt.setScanSpan(1000);//设置定位时间
+        locClient.setLocOption(locCltOpt);
+        locClient.registerLocationListener(locListener);
+    }
+
+    private void init() {
         mapView = (MapView) findViewById(R.id.bmapView);
 
         //创建地图状态对象
         MapStatusUpdate msu = MapStatusUpdateFactory.zoomTo(15.0f);
         bdMap = mapView.getMap();
         bdMap.setMapStatus(msu);
+
+        sensorEventListener = new MySensorEventListener(this);
+        sensorEventListener.setOrientationEvent(this);
+
+
+    }
+
+    @Override
+    protected void onStart() {
+        bdMap.setMyLocationEnabled(true);
+        if (!locClient.isStarted()) {
+            locClient.start();
+        }
+        sensorEventListener.start();
+        super.onStart();
+    }
+
+    @Override
+    protected void onStop() {
+
+        bdMap.setMyLocationEnabled(false);
+        locClient.stop();
+        sensorEventListener.stop();
+        super.onStop();
     }
 
     @Override
@@ -76,12 +136,25 @@ public class MainActivity extends Activity {
                 Log.i(TAG, "实时交通");
                 setTrafficEnabled(item);
                 break;
+            case R.id.menu_item_heat:
+                Log.i(TAG, "热力地图");
+                setHeatEnabled(item);
 
             default:
                 break;
         }
 
         return true;
+    }
+
+    private void setHeatEnabled(MenuItem item) {
+        if (bdMap.isBaiduHeatMapEnabled()) {
+            bdMap.setBaiduHeatMapEnabled(false);
+            item.setTitle("热力(off)");
+        } else {
+            bdMap.setBaiduHeatMapEnabled(true);
+            item.setTitle("热力(on)");
+        }
     }
 
     private void setTrafficEnabled(MenuItem item) {
@@ -92,5 +165,50 @@ public class MainActivity extends Activity {
             bdMap.setTrafficEnabled(true);
             item.setTitle("实时交通(on)");
         }
+    }
+
+    @Override
+    public void onOrientationChange(float value) {
+        this.direction = value;
+    }
+
+    public class MyLocationListener implements BDLocationListener {
+
+        @Override
+        public void onReceiveLocation(BDLocation bdLocation) {
+
+            //构造定位数据
+            MyLocationData myLocData = new MyLocationData.Builder()
+                    .accuracy(bdLocation.getRadius())
+                    .latitude(bdLocation.getLatitude())
+                    .longitude(bdLocation.getLongitude())
+                    .direction(direction)
+                    .build();
+
+            curLatLng = new LatLng(bdLocation.getLatitude(), bdLocation.getLongitude());
+            BitmapDescriptor myDescriptor =
+                    BitmapDescriptorFactory.fromResource(R.drawable.navi_map_gps_locked);
+            MyLocationConfiguration config = new MyLocationConfiguration(
+                    MyLocationConfiguration.LocationMode.NORMAL, true, myDescriptor);
+
+            bdMap.setMyLocationData(myLocData);
+            bdMap.setMyLocationConfigeration(config);
+
+            if (isFirstIn) {
+
+                setMyLocation(curLatLng);
+                isFirstIn = false;
+            }
+
+
+        }
+    }
+
+    private void setMyLocation(LatLng curLatLng) {
+        if (null == curLatLng) {
+            return;
+        }
+        MapStatusUpdate msu = MapStatusUpdateFactory.newLatLng(curLatLng);
+        bdMap.setMapStatus(msu);
     }
 }

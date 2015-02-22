@@ -16,6 +16,11 @@
         android:orderInCategory="100"
         android:showAsAction="never"
         android:title="实时交通(off)" />
+    <item
+        android:id="@+id/menu_item_heat"
+        android:orderInCategory="100"
+        android:showAsAction="never"
+        android:title="热力地图(off)" />
 
 
 
