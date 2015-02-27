@@ -22,4 +22,4 @@
     <!--item android:state_activated="true" android:color="@color/vpi__bright_foreground_holo_dark"/-->
     <item android:color="@color/vpi__bright_foreground_holo_dark"/> <!-- not selected -->
 </selector>
-<!-- From: file:/E:/myproject/CSDN_NEWS/viewPagerlibrary/src/main/res/color/vpi__dark_theme.xml --><!-- From: file:/E:/myproject/CSDN_NEWS/viewPagerlibrary/build/intermediates/bundles/debug/res/color/vpi__dark_theme.xml -->
+<!-- From: file:/E:/gitHubProject/myproject/CSDN_NEWS/viewPagerlibrary/src/main/res/color/vpi__dark_theme.xml --><!-- From: file:/E:/gitHubProject/myproject/CSDN_NEWS/viewPagerlibrary/build/intermediates/bundles/debug/res/color/vpi__dark_theme.xml -->
