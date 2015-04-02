@@ -13,7 +13,6 @@ import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.nostra13.universalimageloader.core.display.FadeInBitmapDisplayer;
-import com.nostra13.universalimageloader.core.display.RoundedBitmapDisplayer;
 import com.zhy.bean.NewsItem;
 import com.zhy.csdnnews.R;
 
@@ -38,13 +37,17 @@ public class NewsItemAdapter extends BaseAdapter {
                 .showImageOnFail(R.drawable.images)
                 .cacheInMemory()
                 .cacheOnDisc()
-                //.displayer(new RoundedBitmapDisplayer(20))
+                        //.displayer(new RoundedBitmapDisplayer(20))
                 .displayer(new FadeInBitmapDisplayer(300))
                 .build();
     }
 
     public void addAll(List<NewsItem> datas) {
         newsItemList.addAll(datas);
+    }
+
+    public void setNewList(List<NewsItem> newsItemList) {
+        this.newsItemList = newsItemList;
     }
 
     @Override

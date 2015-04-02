@@ -13,7 +13,9 @@ import com.zhy.bean.NewsItem;
 import com.zhy.csdn.Constaint;
 import com.zhy.csdn.NewsParser;
 import com.zhy.csdnnews.R;
+import com.zhy.csdnnews.enums.LoadStatus;
 import com.zhy.csdnnews.utils.CConfigKey;
+import com.zhy.csdnnews.utils.MyPreference;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,13 +35,16 @@ public class TabItem extends Fragment implements IXListViewListener {
     private List<NewsItem> newsList = new ArrayList<>();
 
     private NewsItemAdapter newsItemAdapter;
+    private MyPreference myPreference;
 
     public TabItem() {
         parser = new NewsParser();
+
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        myPreference = MyPreference.getInstance(getActivity());
         View view = inflater.inflate(R.layout.tab_item_fragment_main, container, false);
         Bundle args = getArguments();
         if (null != args) {
@@ -67,33 +72,64 @@ public class TabItem extends Fragment implements IXListViewListener {
     //下拉刷新
     @Override
     public void onRefresh() {
-        new LoadDataTask().execute();
+        new LoadDataTask().execute(LoadStatus.ON_REFRESH);
     }
 
     //上拉加载更多
     @Override
     public void onLoadMore() {
+        new LoadDataTask().execute(LoadStatus.LOAD_MORE);
     }
 
-    private class LoadDataTask extends AsyncTask<Void, Void, Void> {
+    private class LoadDataTask extends AsyncTask<LoadStatus, Void, Integer> {
 
 
         @Override
-        protected Void doInBackground(Void... params) {
+        protected Integer doInBackground(LoadStatus... params) {
 
-            try {
-                newsList = parser.parserByPage(newsType, curPage);
-            } catch (NetworkException e) {
-                e.printStackTrace();
+            LoadStatus param = params[0];
+            switch (param) {
+                case ON_REFRESH://不需要加类名
+                    refreshData();
+                    break;
+                case LOAD_MORE:
+                    loadMore();
+                    break;
+                default:
+                    break;
             }
-            return null;
+
+            return 0;
         }
 
         @Override
-        protected void onPostExecute(Void aVoid) {
-            newsItemAdapter.addAll(newsList);
+        protected void onPostExecute(Integer result) {
+
             newsItemAdapter.notifyDataSetChanged();
+            xListView.setRefreshTime(myPreference.getRefreshTime(newsType));
             xListView.stopRefresh();
+            xListView.stopLoadMore();
+        }
+    }
+
+    private void refreshData() {
+        try {
+            curPage = 1;
+            newsList = parser.parserByPage(newsType, curPage);
+            newsItemAdapter.setNewList(newsList);
+            myPreference.setRefreshTime(newsType);
+        } catch (NetworkException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadMore() {
+        try {
+            curPage += 1;
+            newsList = parser.parserByPage(newsType, curPage);
+            newsItemAdapter.addAll(newsList);
+        } catch (NetworkException e) {
+            e.printStackTrace();
         }
     }
 }
